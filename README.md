@@ -4,8 +4,8 @@ Embed [Affiliateo Elements](https://affiliateo.com/docs/elements) in a native An
 
 ## Add the module
 
-This ships as a source module. Clone this repo (or add it as a git submodule)
-next to your project, then include it in your Gradle build:
+This ships as a source module. Clone the release mirror (or add it as a git
+submodule) next to your project, then include it in your Gradle build:
 
 ```bash
 git clone https://github.com/affiliateo/affiliateo-elements-android.git
@@ -22,11 +22,9 @@ project(":affiliateo-elements").projectDir = file("path/to/affiliateo-elements-a
 dependencies { implementation(project(":affiliateo-elements")) }
 ```
 
-(A Maven Central release can follow once the API settles.)
-
-This repo is the release mirror of `packages/elements-android` in the main
-[affiliateo/affiliateo](https://github.com/affiliateo/affiliateo) repo, which
-is where development happens; issues and pull requests belong there.
+(A Maven Central release can follow once the API settles.) Development
+happens in this directory of the main repo; each release is copied to the
+mirror and tagged.
 
 ## Use it
 
@@ -77,12 +75,10 @@ other permission request is denied.
   single-use: create a fresh instance if the screen is shown again.
 - Make it feel instant: create the views for all your tabs when the
   affiliate screen opens (not on tab tap) and keep them attached across
-  switches, so every tab is already rendered when it appears. One caveat:
-  on a device that has never confirmed a sign-in code, a gated element
-  (balance, withdraw, identity) emails a code the moment it loads. Create
-  gated elements on first visit the FIRST time; once the person has
-  confirmed once on that device, gated pages unlock silently and you can
-  pre-create them freely (persist your own flag after the first confirm).
+  switches, so every tab is already rendered when it appears. Gated elements
+  (balance, withdraw, identity) are safe to pre-create too: one asks for a
+  sign-in code only once it has actually been on screen, so an off-screen
+  warm-up stays silent.
 
 > Status: initial release, not yet verified on a physical device. File issues at
 > https://github.com/affiliateo/affiliateo/issues.
