@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Only needed if you use the identity element (a live ID photo). Request
+         the runtime permission before showing that element; the view grants the
+         WebView's camera request once the app itself holds CAMERA. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+</manifest>
