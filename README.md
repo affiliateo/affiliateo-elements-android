@@ -75,6 +75,14 @@ other permission request is denied.
   refresh.
 - The view destroys its WebViews when detached from the window, so it is
   single-use: create a fresh instance if the screen is shown again.
+- Make it feel instant: create the views for all your tabs when the
+  affiliate screen opens (not on tab tap) and keep them attached across
+  switches, so every tab is already rendered when it appears. One caveat:
+  on a device that has never confirmed a sign-in code, a gated element
+  (balance, withdraw, identity) emails a code the moment it loads. Create
+  gated elements on first visit the FIRST time; once the person has
+  confirmed once on that device, gated pages unlock silently and you can
+  pre-create them freely (persist your own flag after the first confirm).
 
 > Status: initial release, not yet verified on a physical device. File issues at
 > https://github.com/affiliateo/affiliateo/issues.
