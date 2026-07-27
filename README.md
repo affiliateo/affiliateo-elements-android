@@ -49,6 +49,90 @@ lifecycleScope.launch {
 `AffiliateoElementView` is a `FrameLayout`, so you can also drop it straight
 into XML and call `load(...)` from code.
 
+## The recommended setup
+
+Nine components is a lot of freedom, and freedom is not a layout. This is the
+one we ship in our own apps. Start here.
+
+```
+Tab 1   Link       qr, link, stats, products
+Tab 2   Balance    balance, activity
+Tab 3   Withdraw   withdraw
+```
+
+Three tabs in Material's own **`NavigationBar`**, not a hand-built one, so you
+get the platform's hit-testing, ripple and TalkBack support for free.
+
+```kotlin
+Scaffold(
+    bottomBar = {
+        NavigationBar {
+            tabs.forEach { t ->
+                NavigationBarItem(
+                    selected = tab == t,
+                    onClick = { tab = t },
+                    icon = { Icon(t.icon, null) },
+                    label = { Text(t.label) },
+                )
+            }
+        }
+    }
+) { padding -> ElementColumn(tab, Modifier.padding(padding)) }
+```
+
+Each tab is one scrolling column with its elements stacked, nothing between
+them, and **your** background behind. The view keeps its WebView transparent on
+purpose, so the element sits on your screen rather than on a white card, which
+means the background has to come from you.
+
+**Do not give `identity` a tab of its own next to `withdraw`.** Withdraw
+already walks an unverified affiliate through the ID check exactly where they
+need it, and skips it forever once they pass. A separate tab shows them the
+same step twice. Use `identity` alone only when you are not showing withdraw
+at all.
+
+## Sizing and theme
+
+A full-screen element needs neither. Stacking several in a `ScrollView` does,
+and both are one line.
+
+```kotlin
+// The element measures its own content and reports every change, in dp, so a
+// stacked element never needs a guessed height.
+element.onContentHeight = { dp ->
+    element.layoutParams = element.layoutParams.also {
+        it.height = (dp * resources.displayMetrics.density).toInt()
+    }
+}
+```
+
+Theme with the `appearance` tokens you pass when you **mint the session**, not
+in the app: nothing about your design is visible from inside an element, so one
+you never theme renders in Affiliateo's own colours. `contentPadding` is worth
+setting too, since elements carry no outer margin (on the web that comes from
+your own padded layout) and a WebView is edge to edge. The token list is at
+https://affiliateo.com/docs/elements.
+
+## When the sign-in lapses
+
+One confirm covers every gated element and keeps covering it: confirming signs
+the person in on Affiliateo's side, so the others on screen recognise that
+session with no second email, and so does the next launch. The step-up itself
+lasts an hour and lives only in the element's memory; the sign-in behind it
+outlives that.
+
+When it eventually lapses the element goes back to asking, and says so. The
+view forgets its own elevation on it automatically. Set `onLocked` only if
+YOUR app remembers the signed-in state somewhere:
+
+```kotlin
+element.onLocked = {
+    // Clear whatever you cached, or the rest of the screen keeps acting
+    // signed in beside a login form.
+    affiliateState.deviceConfirmed = false
+}
+```
+
 ## Permissions
 
 `INTERNET` is declared by the module. The `identity` element also needs the

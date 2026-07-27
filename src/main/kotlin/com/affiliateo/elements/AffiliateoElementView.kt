@@ -55,8 +55,43 @@ class AffiliateoElementView @JvmOverloads constructor(
      */
     var onComplete: ((String?) -> Unit)? = null
 
+    /**
+     * The element's own measurement of its content, every time it changes.
+     *
+     * A WebView no more grows to fit its content than an iframe does, so an
+     * element stacked with others needs someone to size it. Set this and give
+     * the view a matching height instead of guessing one that clips the first
+     * time a product row or an error line appears.
+     *
+     * The value is in CSS pixels, which is dp, so scale it before it reaches
+     * layout params:
+     *
+     * ```kotlin
+     * element.onContentHeight = { dp ->
+     *     layoutParams = layoutParams.also {
+     *         it.height = (dp * resources.displayMetrics.density).toInt()
+     *     }
+     * }
+     * ```
+     *
+     * Always called on the main thread.
+     */
+    var onContentHeight: ((Int) -> Unit)? = null
+
+    /**
+     * A gated element is asking to sign in again, because the session behind it
+     * lapsed.
+     *
+     * This view already forgets its own elevation on it, so you only need this
+     * if YOUR app remembers somewhere that the person is signed in. Clear that
+     * here. Ours did not, and the rest of the screen went on acting signed in
+     * underneath a login form. Always called on the main thread.
+     */
+    var onLocked: (() -> Unit)? = null
+
     private val webView = WebView(context)
     private var popup: WebView? = null
+    private var lastContentHeight = 0
 
     /**
      * Whether this element's own page confirmed the sign-in code. A page
@@ -79,11 +114,12 @@ class AffiliateoElementView @JvmOverloads constructor(
         configure(webView)
         webView.webViewClient = ElementClient()
         webView.webChromeClient = ElementChrome()
-        // The gated elements announce a typed sign-in confirm on this bridge
-        // so their siblings can unlock without their own email code. Main
-        // WebView only: the popup never hosts an element page, so it has no
-        // business holding the bridge.
-        webView.addJavascriptInterface(ElevationBridge(), "AffiliateoAndroid")
+        // The element pages' outbound bridge: a typed sign-in confirm (so
+        // siblings can unlock without their own email code), a silent
+        // recognition, and the element's own height. Main WebView only: the
+        // popup never hosts an element page, so it has no business holding
+        // the bridge.
+        webView.addJavascriptInterface(ElementBridge(), "AffiliateoAndroid")
         addView(webView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         synchronized(registry) { registry.add(this) }
     }
@@ -143,16 +179,61 @@ class AffiliateoElementView @JvmOverloads constructor(
     }
 
     /**
-     * The `window.AffiliateoAndroid` object the element pages see. The
-     * callback carries no data worth trusting, and acting on it can only
-     * reload our own element views, so a hostile page calling it gains
-     * nothing beyond a redundant refresh.
+     * This element was recognised from an existing session rather than a typed
+     * code. Nothing to broadcast (announcing it is what would loop siblings
+     * into reloading each other), but it is open, so record that and spare it
+     * a pointless reload when a sibling confirms.
      */
-    private inner class ElevationBridge {
+    private fun notifyRecognised() {
+        didElevate = true
+    }
+
+    /**
+     * The gate came back. Forgetting the elevation is what lets the next
+     * confirm elsewhere on screen reach this view again, since a sibling's
+     * confirm only reloads views that are not already elevated.
+     */
+    private fun notifyLocked() {
+        didElevate = false
+        onLocked?.invoke()
+    }
+
+    private fun notifyContentHeight(height: Int) {
+        if (height <= 0 || height == lastContentHeight) return
+        lastContentHeight = height
+        onContentHeight?.invoke(height)
+    }
+
+    /**
+     * The `window.AffiliateoAndroid` object the element pages see. The
+     * callbacks carry no data worth trusting, and acting on them can only
+     * reload our own element views or resize this one, so a hostile page
+     * calling them gains nothing beyond a redundant refresh.
+     */
+    private inner class ElementBridge {
         @JavascriptInterface
         fun elevated(@Suppress("UNUSED_PARAMETER") component: String?) {
             // JavascriptInterface methods arrive on a WebView worker thread.
             post { notifyElevated() }
+        }
+
+        @JavascriptInterface
+        fun recognized(@Suppress("UNUSED_PARAMETER") component: String?) {
+            post { notifyRecognised() }
+        }
+
+        @JavascriptInterface
+        fun locked(@Suppress("UNUSED_PARAMETER") component: String?) {
+            post { notifyLocked() }
+        }
+
+        // Double rather than Int: the bridge converts a JS number to either,
+        // but a double never has to round-trip through a narrowing conversion
+        // the WebView might refuse.
+        @JavascriptInterface
+        fun resize(@Suppress("UNUSED_PARAMETER") component: String?, height: Double) {
+            val dp = height.toInt()
+            post { notifyContentHeight(dp) }
         }
     }
 
