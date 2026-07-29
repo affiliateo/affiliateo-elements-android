@@ -213,4 +213,5 @@ other permission request is denied.
   warm-up stays silent.
 
 > Status: initial release, not yet verified on a physical device. File issues at
-> https://github.com/affiliateo/affiliateo/issues.
+> https://github.com/affiliateo/affiliateo-elements-android/issues, or email
+> support@affiliateo.com.
