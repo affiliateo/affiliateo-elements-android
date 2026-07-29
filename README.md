@@ -106,12 +106,60 @@ element.onContentHeight = { dp ->
 }
 ```
 
-Theme with the `appearance` tokens you pass when you **mint the session**, not
-in the app: nothing about your design is visible from inside an element, so one
-you never theme renders in Affiliateo's own colours. `contentPadding` is worth
-setting too, since elements carry no outer margin (on the web that comes from
-your own padded layout) and a WebView is edge to edge. The token list is at
+Theme with the `appearance` tokens you pass when you **mint the session**:
+nothing about your design is visible from inside an element, so one you never
+theme renders in Affiliateo's own colours. `contentPadding` is worth setting
+too, since elements carry no outer margin (on the web that comes from your own
+padded layout) and a WebView is edge to edge. The token list is at
 https://affiliateo.com/docs/elements.
+
+Set the same tokens on `appearance` here and a live element restyles in place,
+which is what a dark-mode switch needs: reloading would throw away whatever
+the person was in the middle of. Keep both. The minted copy handles first
+paint, so an element never flashes our defaults before your brand lands, and
+this copy is re-applied after every reload.
+
+```kotlin
+element.appearance = mapOf("colorBackground" to "#0B0B0D", "colorText" to "#EEEEEE")
+
+// Drive the date window from your own controls (affiliate, activity).
+element.updateRange(AffiliateoDateRange("2026-07-01", "2026-07-31"))
+element.updateRange(null)   // all-time
+```
+
+## Hiding your own placeholder
+
+`onReady` fires when the element has rendered its first frame, with your
+appearance and range already applied. Do not use `onPageFinished` for this: it
+fires when the document loads, which is before the element has fetched and
+laid out, so a spinner removed there uncovers an empty view.
+
+```kotlin
+element.onReady = { spinner.isVisible = false }
+```
+
+It fires again after any reload (a finished withdrawal, an hourly session
+refresh), which is when you want the placeholder back anyway.
+
+## Sessions
+
+Sessions last an hour, and `load()` takes a secret you already minted, so
+this view has nothing to call when one lapses. **Set `onSessionExpiring` or a
+screen left open for an hour goes dead**, quietly. With it set, the view
+re-mints about two minutes before each expiry, catches up when the app
+returns to the foreground, and retries on a short backoff if your backend is
+briefly unavailable.
+
+```kotlin
+element.onSessionExpiring = { deliver ->
+    lifecycleScope.launch { deliver(api.mintAffiliateoSecret()) }
+}
+element.load(AffiliateoComponent.BALANCE, firstSecret)
+```
+
+`deliver` is safe to call from any thread, and a late or duplicate delivery
+(the person navigated away, or a slow call landed after a retry) is ignored
+rather than swapping the URL under their finger.
 
 ## When the sign-in lapses
 
