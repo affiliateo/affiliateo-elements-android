@@ -551,7 +551,7 @@ class AffiliateoElementView @JvmOverloads constructor(
             respondToPermissionRequest(request)
         }
 
-        // window.open from the balance/withdraw/identity elements. Host the
+        // window.open from the withdraw/identity elements. Host the
         // confirm + hosted-portal window in a WebView layered on top, so it can
         // run its own navigation and hand back.
         override fun onCreateWindow(

@@ -27,11 +27,14 @@ enum class AffiliateoComponent(val slug: String) {
     /** Recent sales; refunds show as negatives. */
     ACTIVITY("activity"),
 
-    /** Wallet: ready to withdraw, pending, settling. */
+    /** What your app owes them: pending, payable, paid. No confirm needed. */
     BALANCE("balance"),
 
-    /** The balance plus a button that opens the real cash-out flow. */
+    /** Their account-wide wallet plus a button that opens the real cash-out flow. */
     WITHDRAW("withdraw"),
+
+    /** Their withdrawal history: amount, status, bank, arrival. */
+    PAYOUTS("payouts"),
 
     /** Gets them verified and set up to be paid. */
     IDENTITY("identity"),

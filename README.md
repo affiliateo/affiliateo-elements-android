@@ -1,6 +1,6 @@
 # Affiliateo Elements (Kotlin / Android)
 
-Embed [Affiliateo Elements](https://affiliateo.com/docs/elements) in a native Android app. The element renders in a `WebView`; there is no native-UI rewrite, because balance, withdraw, and identity are money and camera surfaces safest run once, on Affiliateo's side, and reused everywhere.
+Embed [Affiliateo Elements](https://affiliateo.com/docs/elements) in a native Android app. The element renders in a `WebView`; there is no native-UI rewrite, because withdraw and identity are money and camera surfaces safest run once, on Affiliateo's side, and reused everywhere.
 
 ## Add the module
 
@@ -208,7 +208,7 @@ other permission request is denied.
 - Make it feel instant: create the views for all your tabs when the
   affiliate screen opens (not on tab tap) and keep them attached across
   switches, so every tab is already rendered when it appears. Gated elements
-  (balance, withdraw, identity) are safe to pre-create too: one asks for a
+  (withdraw, identity) are safe to pre-create too: one asks for a
   sign-in code only once it has actually been on screen, so an off-screen
   warm-up stays silent.
 
