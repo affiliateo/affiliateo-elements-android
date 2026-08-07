@@ -54,11 +54,45 @@ into XML and call `load(...)` from code.
 Nine components is a lot of freedom, and freedom is not a layout. This is the
 one we ship in our own apps. Start here.
 
+**Which to use, per screen.** Every element is its own page load, so a tab
+stacking four pays for four before it paints and your app cannot cache any of
+them. Anything the REST API already returns is faster built natively and can be
+cached, so the screen paints the moment it opens. Build `link`, `qr`, `stats`,
+`products`, `activity` and `balance` yourself from
+`GET /affiliates?email=` + `GET /apps/{appId}` + `GET /affiliates/conversions`,
+and mount elements only for `withdraw`, `payouts` and `identity`: the three that
+collect bank details, open the account-wide wallet, or run ID capture.
+
+```
+Tab 1   Link       built from the API
+Tab 2   Balance    built from the API
+Tab 3   Cash out   withdraw            <- the only element
+```
+
+Lists are the sharpest case. The embedded `activity` and `payouts` elements show
+the 25 most recent and **do not paginate**, so an affiliate with a year of sales
+cannot reach the 26th, while `GET /affiliates/conversions` is cursor-paginated
+(`?limit=`, `?starting_after=`, `?from=&to=`) and scrolls as far as they like.
+
+Mounting all of them still works if you would rather we rendered everything. It
+is just slower and uncacheable:
+
 ```
 Tab 1   Link       qr, link, stats, products
 Tab 2   Balance    balance, activity
 Tab 3   Withdraw   withdraw
 ```
+
+**Copy is not the catch.** The API returns data, never labels, but you do not
+have to write your own translations: the exact strings our elements use are
+published at `https://affiliateo.com/locales/{lang}.json` in all 16 languages.
+Lift `embed.appEarnings.*` for the buckets and their hint line,
+`embed.activity.*` for row types and empty states, `embed.filter.preset.*` for
+the date chips, and `embed.link.format*` for the picker. Copy the values into
+your own catalogue at build time rather than fetching live, since those files
+are the elements' runtime asset and not a versioned API. Keep the money words
+verbatim even if you reword the rest: **Paid** means already in their Affiliateo
+balance and *not* yet in their bank, so "Paid out" is the wording to avoid.
 
 Three tabs in Material's own **`NavigationBar`**, not a hand-built one, so you
 get the platform's hit-testing, ripple and TalkBack support for free.
